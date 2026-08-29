@@ -1,0 +1,64 @@
+# CI/CD (Fase 4): en cada push a main compila, construye y sube la imagen
+# a ghcr.io, y actualiza el tag en el chart de Helm (eso lo detecta ArgoCD).
+
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+
+# Necesario para que GITHUB_TOKEN pueda subir el paquete y comitear.
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del codigo
+        uses: actions/checkout@v4
+
+      - name: Instalar .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # Falla rapido si el codigo no compila.
+      - name: Compilar
+        run: dotnet build --configuration Release
+
+      # Hash corto del commit = tag unico y trazable para la imagen.
+      - name: Definir tag de la imagen
+        id: vars
+        run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      # GITHUB_TOKEN lo genera GitHub solo, sin token manual.
+      - name: Login a ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build y push de la imagen
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/alexisqm047/proyecto-k8s:${{ steps.vars.outputs.tag }}
+            ghcr.io/alexisqm047/proyecto-k8s:latest
+
+      # Actualiza el tag en values.yaml: esto es lo que ArgoCD vigila.
+      - name: Actualizar tag en Helm values
+        run: |
+          sed -i "s|tag: \".*\"|tag: \"${{ steps.vars.outputs.tag }}\"|" helm/cotizacion-service/values.yaml
+
+      - name: Comitear el cambio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add helm/cotizacion-service/values.yaml
+          git commit -m "ci: actualizar imagen a ${{ steps.vars.outputs.tag }} [skip ci]" || echo "Sin cambios que comitear"
+          git push
