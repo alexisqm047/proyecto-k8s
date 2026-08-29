@@ -1,0 +1,33 @@
+# Recurso Application de ArgoCD (Fase 5).
+# Le dice a ArgoCD que repo/carpeta vigilar y donde desplegar.
+# Se aplica una sola vez con kubectl; de ahi en adelante ArgoCD se
+# encarga de sincronizar solo en cada cambio detectado en Git.
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cotizacion-service
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/alexisqm047/proyecto-k8s.git
+    targetRevision: main
+    path: helm/cotizacion-service
+    helm:
+      # Mismos values que usamos al probar con "helm install" manual.
+      valueFiles:
+        - values.yaml
+        - values-dev.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+
+  syncPolicy:
+    automated:
+      prune: true    # borra recursos que ya no esten en Git
+      selfHeal: true  # revierte cambios manuales hechos fuera de Git
+    syncOptions:
+      - CreateNamespace=true
