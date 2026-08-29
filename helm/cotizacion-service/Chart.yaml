@@ -1,0 +1,12 @@
+apiVersion: v2
+name: cotizacion-service
+description: Chart de Helm para el microservicio de Cotización de Productos con Descuentos
+type: application
+
+# Version del chart en si (plantillas + values). Se sube cada vez que se
+# modifica algo de la carpeta helm/, sin importar si cambia la app.
+version: 0.1.0
+
+# Version de la aplicacion que empaqueta este chart. Debe coincidir con el
+# tag de la imagen publicada en ghcr.io.
+appVersion: "v1.0.0"

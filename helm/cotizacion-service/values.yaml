@@ -1,0 +1,93 @@
+replicaCount: 1
+
+# Imagen publicada en GitHub Container Registry (Fase 2). El tag se
+# sobreescribe automaticamente desde el pipeline de CI en cada build.
+image:
+  repository: ghcr.io/alexisqm047/proyecto-k8s
+  pullPolicy: IfNotPresent
+  tag: "v1.0.0"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+securityContext: {}
+
+# Puerto 8080: debe coincidir con ASPNETCORE_URLS definido en el Dockerfile.
+# Esta misma plantilla usa este valor tanto para el Service como para el
+# containerPort del pod.
+service:
+  type: ClusterIP
+  port: 8080
+
+# No se usa en este proyecto (no se expone el servicio fuera del cluster).
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+# Alternativa moderna al Ingress (Gateway API). Tampoco se usa aqui.
+httpRoute:
+  enabled: false
+  annotations: {}
+  parentRefs:
+    - name: gateway
+      sectionName: http
+  hostnames:
+    - chart-example.local
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /headers
+
+# "Talla" XS: suficiente para un microservicio sin base de datos.
+# requests = garantizado, limits = tope maximo (visto en clase).
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+# Apuntan a /health, el endpoint que se construyo especificamente para
+# los probes de Kubernetes (ver Program.cs).
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+
+# HPA basado en % de CPU (tema visto en clase).
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+volumes: []
+volumeMounts: []
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

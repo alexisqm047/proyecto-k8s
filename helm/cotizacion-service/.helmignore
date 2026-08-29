@@ -1,0 +1,11 @@
+# Archivos que Helm no debe incluir al empaquetar el chart (helm package).
+.DS_Store
+.git/
+.gitignore
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+.idea/
+.vscode/

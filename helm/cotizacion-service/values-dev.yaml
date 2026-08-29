@@ -1,0 +1,16 @@
+# Override para el ambiente de desarrollo/pruebas.
+# Se usa junto con values.yaml: helm install ... -f values.yaml -f values-dev.yaml
+# Prioriza costo bajo sobre disponibilidad: 1 replica fija, sin autoescalado.
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 150m
+    memory: 128Mi
+
+autoscaling:
+  enabled: false

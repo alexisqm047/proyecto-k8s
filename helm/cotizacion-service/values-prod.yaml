@@ -1,0 +1,20 @@
+# Override para el ambiente de produccion.
+# Se usa junto con values.yaml: helm install ... -f values.yaml -f values-prod.yaml
+# Mas recursos y autoescalado activo con piso de 2 replicas (evita caida a 0
+# disponibilidad si un pod falla) y un umbral de CPU mas conservador.
+
+replicaCount: 2
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 70
