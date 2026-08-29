@@ -33,13 +33,14 @@ jobs:
         id: vars
         run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      # GITHUB_TOKEN lo genera GitHub solo, sin token manual.
+      # GHCR_TOKEN: token personal de alexisqm047 guardado como secret.
+      # GITHUB_TOKEN no alcanza para pushear a este paquete (cuenta personal).
       - name: Login a ghcr.io
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: alexisqm047
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Build y push de la imagen
         uses: docker/build-push-action@v6
