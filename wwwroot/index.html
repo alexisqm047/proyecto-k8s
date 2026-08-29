@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Cotizador de Productos</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; background: #f5f6fa; }
+  h1 { color: #222; }
+  .card { background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+  label { display: block; margin-top: 12px; font-weight: bold; }
+  select, input, button { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; font-size: 14px; }
+  button { margin-top: 20px; background: #2757d6; color: white; border: none; border-radius: 6px; cursor: pointer; padding: 10px; }
+  button:hover { background: #1d43ab; }
+  .resultado { margin-top: 16px; padding: 16px; background: #eef4ff; border-radius: 6px; display: none; }
+  .resultado.visible { display: block; }
+  .error { color: #b00020; margin-top: 12px; }
+  .fila { display: flex; justify-content: space-between; padding: 4px 0; }
+  .total { font-size: 20px; font-weight: bold; color: #1d43ab; }
+</style>
+</head>
+<body>
+
+<h1>🧾 Cotizador de Productos</h1>
+
+<div class="card">
+  <label for="producto">Producto</label>
+  <select id="producto"></select>
+
+  <label for="cantidad">Cantidad</label>
+  <input type="number" id="cantidad" value="1" min="1" />
+
+  <label for="tipoCliente">Tipo de cliente</label>
+  <select id="tipoCliente">
+    <option value="Regular">Regular</option>
+    <option value="Vip">VIP</option>
+    <option value="Mayorista">Mayorista</option>
+  </select>
+
+  <button onclick="cotizar()">Cotizar</button>
+
+  <div id="error" class="error"></div>
+
+  <div id="resultado" class="resultado">
+    <div class="fila"><span>Producto:</span><span id="r-producto"></span></div>
+    <div class="fila"><span>Cantidad:</span><span id="r-cantidad"></span></div>
+    <div class="fila"><span>Precio base unitario:</span><span id="r-precioBase"></span></div>
+    <div class="fila"><span>Descuento aplicado:</span><span id="r-descuento"></span></div>
+    <div class="fila"><span>Precio unitario con descuento:</span><span id="r-precioFinal"></span></div>
+    <div class="fila total"><span>Total:</span><span id="r-total"></span></div>
+  </div>
+</div>
+
+<script>
+  const fmt = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
+
+  async function cargarProductos() {
+    const res = await fetch('/api/productos');
+    const productos = await res.json();
+    const select = document.getElementById('producto');
+    select.innerHTML = productos.map(p => `<option value="${p.id}">${p.nombre} (${fmt(p.precioBase)})</option>`).join('');
+  }
+
+  async function cotizar() {
+    const productoId = parseInt(document.getElementById('producto').value);
+    const cantidad = parseInt(document.getElementById('cantidad').value);
+    const tipoCliente = document.getElementById('tipoCliente').value;
+    const errorDiv = document.getElementById('error');
+    const resultadoDiv = document.getElementById('resultado');
+
+    errorDiv.textContent = '';
+    resultadoDiv.classList.remove('visible');
+
+    try {
+      const res = await fetch('/api/cotizacion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productoId, cantidad, tipoCliente })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        errorDiv.textContent = data.error || 'Ocurrió un error al cotizar.';
+        return;
+      }
+
+      document.getElementById('r-producto').textContent = data.producto;
+      document.getElementById('r-cantidad').textContent = data.cantidad;
+      document.getElementById('r-precioBase').textContent = fmt(data.precioBaseUnitario);
+      document.getElementById('r-descuento').textContent = (data.porcentajeDescuento * 100).toFixed(0) + '%';
+      document.getElementById('r-precioFinal').textContent = fmt(data.precioUnitarioConDescuento);
+      document.getElementById('r-total').textContent = fmt(data.total);
+      resultadoDiv.classList.add('visible');
+    } catch (e) {
+      errorDiv.textContent = 'No se pudo conectar con el servicio.';
+    }
+  }
+
+  cargarProductos();
+</script>
+
+</body>
+</html>
